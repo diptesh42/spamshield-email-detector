@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Spam Detector</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #0f0f1a;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: #1a1a2e;
+      border-radius: 20px;
+      padding: 40px;
+      width: 100%;
+      max-width: 680px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      border: 1px solid #2a2a4a;
+    }
+
+    .logo {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .logo-icon {
+      font-size: 48px;
+      display: block;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: #e2e8f0;
+      letter-spacing: -0.5px;
+    }
+
+    h1 span {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      color: #718096;
+      font-size: 14px;
+      margin-top: 6px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #a0aec0;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 220px;
+      background: #0f0f1a;
+      border: 2px solid #2d2d4e;
+      border-radius: 12px;
+      color: #e2e8f0;
+      font-size: 15px;
+      padding: 16px;
+      resize: vertical;
+      transition: border-color 0.2s;
+      font-family: inherit;
+      line-height: 1.6;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    textarea::placeholder { color: #4a5568; }
+
+    .btn-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    button {
+      flex: 1;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-check {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+    }
+
+    .btn-check:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-check:active { transform: translateY(0); }
+    .btn-check:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .btn-clear {
+      background: #2d2d4e;
+      color: #a0aec0;
+      flex: 0 0 auto;
+      padding: 14px 22px;
+    }
+
+    .btn-clear:hover { background: #3a3a5e; color: #e2e8f0; }
+
+    /* Result card */
+    .result {
+      margin-top: 24px;
+      border-radius: 14px;
+      padding: 24px;
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .result.spam {
+      background: linear-gradient(135deg, #2d1515, #3d1a1a);
+      border: 1px solid #c53030;
+    }
+
+    .result.ham {
+      background: linear-gradient(135deg, #0d2a1a, #132d1e);
+      border: 1px solid #276749;
+    }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .result-icon { font-size: 38px; }
+
+    .result-title {
+      font-size: 22px;
+      font-weight: 700;
+    }
+
+    .spam .result-title  { color: #fc8181; }
+    .ham  .result-title  { color: #68d391; }
+
+    .result-sub {
+      font-size: 13px;
+      margin-top: 3px;
+    }
+
+    .spam .result-sub { color: #fc8181aa; }
+    .ham  .result-sub { color: #68d391aa; }
+
+    /* Confidence bars */
+    .bars { display: flex; flex-direction: column; gap: 10px; }
+
+    .bar-row { display: flex; align-items: center; gap: 10px; }
+
+    .bar-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #a0aec0;
+      width: 70px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .bar-track {
+      flex: 1;
+      height: 8px;
+      background: #2d2d4e;
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 99px;
+      transition: width 0.6s ease;
+    }
+
+    .spam-fill { background: linear-gradient(90deg, #e53e3e, #fc8181); }
+    .ham-fill  { background: linear-gradient(90deg, #276749, #68d391); }
+
+    .bar-pct {
+      font-size: 13px;
+      font-weight: 700;
+      color: #e2e8f0;
+      width: 44px;
+      text-align: right;
+    }
+
+    .error-msg {
+      margin-top: 12px;
+      color: #fc8181;
+      font-size: 13px;
+      text-align: center;
+      display: none;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid #ffffff44;
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="logo">
+    <span class="logo-icon">🛡️</span>
+    <h1>Spam <span>Detector</span></h1>
+    <p class="subtitle">Powered by Naive Bayes · Paste any email to analyse</p>
+  </div>
+
+  <label for="email_text">Email Content</label>
+  <textarea id="email_text" placeholder="Paste your email text here...&#10;&#10;e.g. Congratulations! You've won a $1,000 gift card. Click here to claim your prize now!"></textarea>
+
+  <div class="btn-row">
+    <button class="btn-check" id="checkBtn" onclick="checkSpam()">
+      Analyse Email
+    </button>
+    <button class="btn-clear" onclick="clearAll()">Clear</button>
+  </div>
+
+  <p class="error-msg" id="errorMsg"></p>
+
+  <div class="result" id="result">
+    <div class="result-header">
+      <div class="result-icon" id="resultIcon"></div>
+      <div>
+        <div class="result-title" id="resultTitle"></div>
+        <div class="result-sub"  id="resultSub"></div>
+      </div>
+    </div>
+    <div class="bars">
+      <div class="bar-row">
+        <div class="bar-label">Spam</div>
+        <div class="bar-track">
+          <div class="bar-fill spam-fill" id="spamBar" style="width:0%"></div>
+        </div>
+        <div class="bar-pct" id="spamPct">0%</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Not Spam</div>
+        <div class="bar-track">
+          <div class="bar-fill ham-fill" id="hamBar" style="width:0%"></div>
+        </div>
+        <div class="bar-pct" id="hamPct">0%</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  async function checkSpam() {
+    const text = document.getElementById('email_text').value.trim();
+    const errEl  = document.getElementById('errorMsg');
+    const resEl  = document.getElementById('result');
+    const btn    = document.getElementById('checkBtn');
+
+    errEl.style.display  = 'none';
+    resEl.style.display  = 'none';
+
+    if (!text) {
+      errEl.textContent  = 'Please paste some email text first.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Analysing…';
+
+    try {
+      const fd = new FormData();
+      fd.append('email_text', text);
+
+      const resp = await fetch('/predict', { method: 'POST', body: fd });
+      const data = await resp.json();
+
+      if (data.error) throw new Error(data.error);
+
+      const isSpam = data.is_spam;
+
+      resEl.className = 'result ' + (isSpam ? 'spam' : 'ham');
+      document.getElementById('resultIcon').textContent  = isSpam ? '🚨' : '✅';
+      document.getElementById('resultTitle').textContent = isSpam ? 'SPAM Detected' : 'Not Spam';
+      document.getElementById('resultSub').textContent   = isSpam
+        ? 'This email looks like spam. Be cautious!'
+        : 'This email appears to be legitimate.';
+
+      document.getElementById('spamBar').style.width = data.spam_confidence + '%';
+      document.getElementById('hamBar').style.width  = data.ham_confidence  + '%';
+      document.getElementById('spamPct').textContent = data.spam_confidence + '%';
+      document.getElementById('hamPct').textContent  = data.ham_confidence  + '%';
+
+      resEl.style.display = 'block';
+    } catch (err) {
+      errEl.textContent   = err.message || 'Something went wrong. Please try again.';
+      errEl.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = 'Analyse Email';
+    }
+  }
+
+  function clearAll() {
+    document.getElementById('email_text').value = '';
+    document.getElementById('result').style.display  = 'none';
+    document.getElementById('errorMsg').style.display = 'none';
+  }
+
+  // Allow Ctrl+Enter to submit
+  document.getElementById('email_text').addEventListener('keydown', e => {
+    if (e.ctrlKey && e.key === 'Enter') checkSpam();
+  });
+</script>
+</body>
+</html>
